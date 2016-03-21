@@ -4,6 +4,7 @@ module Distribution.Debian.Repository.PackagesIndex
   , PackagesIndex (..)
   , ParsePackagesResult (..)
   , parsePackages
+  , storePackages
   ) where
 
 import Control.Applicative
@@ -202,3 +203,25 @@ parsePackages = go (PackagesIndex Map.empty) (ParserState T.streamDecodeUtf8 (Pa
           return line
 
     endOfLineOrInput = endOfLine <|> endOfInput
+
+storePackages :: Monad m => PackagesIndex -> (B.ByteString -> m ()) -> m ()
+storePackages idx act = forM_ (Map.toList $ _indexPackages idx) $ \(packageName, package) -> do
+    yieldLine $ "Package: " <> packageName
+    yieldLine $ "Filename: " <> _packageFilename package
+    yieldLine $ "Size: " <> _packageSize package
+    forM_ (Map.toList $ _packageOtherFields package) $ \(fieldName, fieldValue) -> case fieldName of
+      "Description" -> storeDescription fieldValue
+      _ -> yieldLine $ fieldName <> ": " <> fieldValue
+    yieldLine ""
+  where
+    yieldLine x = act $ T.encodeUtf8 (x <> "\r\n")
+    storeDescription v = do
+      let descriptionLines = T.splitOn "\n" v
+          (firstLine, nextLines) = case descriptionLines of
+            []   -> (T.empty, [])
+            x:xs -> (x, xs)
+      yieldLine $ "Description: " <> firstLine
+      forM_ nextLines $ \line ->
+        if T.null line
+          then yieldLine " ."
+          else yieldLine $ " " <> line

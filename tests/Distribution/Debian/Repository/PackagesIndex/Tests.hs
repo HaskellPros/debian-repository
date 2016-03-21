@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Distribution.Debian.Repository.PackagesIndex.Tests (tests) where
 
+import Control.Monad.ST
 import Data.Map.Strict (Map)
 import Data.Monoid
+import Data.STRef
 import Distribution.Debian.Repository.PackagesIndex
 import Distribution.Debian.Repository.TestHelpers
 import Test.Tasty
@@ -34,10 +36,25 @@ parse2UbuntuRandomChunks = forAll (gRandomStringChunks ubuntuPackages) $ \chunks
       ParsePackagesOk _ next -> next chunk
       ParsePackagesFail _ -> res
 
+backAndForth2Ubuntu :: IO ()
+backAndForth2Ubuntu = do
+  let serialized = runST $ do
+        ref <- newSTRef B.empty
+        storePackages ubuntuPackagesParsed $ \chunk -> do
+          current <- readSTRef ref
+          writeSTRef ref (current <> chunk)
+        readSTRef ref
+  case parsePackages serialized of
+    ParsePackagesOk _ next -> case next B.empty of
+      ParsePackagesOk idx _ -> assertEqual "Parse result equals expected" ubuntuPackagesParsed idx
+      ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+    ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+
 tests :: TestTree
 tests = testGroup "Distribution.Debian.Repository.PackagesIndex.Tests"
   [ testCase "Parse 2 Ubuntu packages" parse2UbuntuPackages
   , testProperty "Any chunks 2 Ubuntu packages" parse2UbuntuRandomChunks
+  , testCase "Back and forth 2 Ubuntu packages" backAndForth2Ubuntu
   ]
 
 ubuntuPackages :: B.ByteString
