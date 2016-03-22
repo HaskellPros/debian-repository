@@ -17,24 +17,24 @@ import qualified Data.Text as T
 parse2UbuntuPackages :: IO ()
 parse2UbuntuPackages =
   case parsePackages ubuntuPackages of
-    ParsePackagesOk _ next -> case next B.empty of
-      ParsePackagesOk idx _ -> assertEqual "Parse result equals expected" ubuntuPackagesParsed idx
-      ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
-    ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+    IncrementalParseOk _ next -> case next B.empty of
+      IncrementalParseOk idx _ -> assertEqual "Parse result equals expected" (Just ubuntuPackagesParsed) idx
+      IncrementalParseFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+    IncrementalParseFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
 
 parse2UbuntuRandomChunks :: Property
 parse2UbuntuRandomChunks = forAll (gRandomStringChunks ubuntuPackages) $ \chunks ->
     case chunks of
       [] -> True
       x:xs -> case foldl foldFn (parsePackages x) xs of
-        ParsePackagesOk _ next -> case next B.empty of
-          ParsePackagesOk idx _ -> ubuntuPackagesParsed == idx
-          ParsePackagesFail msg -> False
-        ParsePackagesFail msg -> False
+        IncrementalParseOk _ next -> case next B.empty of
+          IncrementalParseOk idx _ -> Just ubuntuPackagesParsed == idx
+          IncrementalParseFail msg -> False
+        IncrementalParseFail msg -> False
   where
     foldFn res chunk = case res of
-      ParsePackagesOk _ next -> next chunk
-      ParsePackagesFail _ -> res
+      IncrementalParseOk _ next -> next chunk
+      IncrementalParseFail _ -> res
 
 backAndForth2Ubuntu :: IO ()
 backAndForth2Ubuntu = do
@@ -45,10 +45,10 @@ backAndForth2Ubuntu = do
           writeSTRef ref (current <> chunk)
         readSTRef ref
   case parsePackages serialized of
-    ParsePackagesOk _ next -> case next B.empty of
-      ParsePackagesOk idx _ -> assertEqual "Parse result equals expected" ubuntuPackagesParsed idx
-      ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
-    ParsePackagesFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+    IncrementalParseOk _ next -> case next B.empty of
+      IncrementalParseOk idx _ -> assertEqual "Parse result equals expected" (Just ubuntuPackagesParsed) idx
+      IncrementalParseFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
+    IncrementalParseFail msg -> assertFailure $ "Parse failed with error message " <> T.unpack msg
 
 tests :: TestTree
 tests = testGroup "Distribution.Debian.Repository.PackagesIndex.Tests"

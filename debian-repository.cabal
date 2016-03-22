@@ -10,14 +10,23 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Distribution.Debian.Repository
+    Distribution.Debian.Repository.Backend
     Distribution.Debian.Repository.PackagesIndex
+    Distribution.Debian.Repository.Parse
+    Distribution.Debian.Repository.ReleaseFile
   build-depends:
       attoparsec
     , base
     , bytestring
+    , conduit
     , containers
     , lens
+    , http-conduit
+    , http-types
+    , resourcet
     , text
+    , transformers
+    , transformers-base
 
 test-suite test-debian-repository
   type: exitcode-stdio-1.0
