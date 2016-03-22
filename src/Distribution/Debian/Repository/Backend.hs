@@ -5,7 +5,6 @@ module Distribution.Debian.Repository.Backend
   , withUriSchemaBackend
   ) where
 
-import Control.Monad.Base
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Resource
 import Data.Conduit
@@ -27,11 +26,11 @@ detectUriSchema uri
   | "http://" `T.isPrefixOf` uri = RepositoryUriSchemaHTTP
   | otherwise = RepositoryUriSchemaUnknown
 
-withSchemaBackend :: (MonadIO m, MonadBase IO m, MonadThrow m) => RepositoryUriSchema -> (RepositoryUriSchemaBackend (ResourceT m) -> m a) -> m a
+withSchemaBackend :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) => RepositoryUriSchema -> (RepositoryUriSchemaBackend (ResourceT m) -> (ResourceT m) a) -> m a
 withSchemaBackend s act = case s of
   RepositoryUriSchemaHTTP -> do
     manager <- liftIO $ newManager tlsManagerSettings
-    act RepositoryUriSchemaBackend
+    runResourceT $ act RepositoryUriSchemaBackend
       { repositoryUriRead = \urlText act -> do
           url <- parseUrl $ T.unpack urlText
           response <- http url manager
@@ -40,5 +39,5 @@ withSchemaBackend s act = case s of
             else throwM $ StatusCodeException (responseStatus response) (responseHeaders response) (responseCookieJar response)
       }
 
-withUriSchemaBackend :: (MonadIO m, MonadBase IO m, MonadThrow m) => T.Text -> (RepositoryUriSchemaBackend (ResourceT m) -> m a) -> m a
+withUriSchemaBackend :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) => T.Text -> (RepositoryUriSchemaBackend (ResourceT m) -> (ResourceT m) a) -> m a
 withUriSchemaBackend uri = withSchemaBackend (detectUriSchema uri)

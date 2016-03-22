@@ -10,16 +10,20 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Distribution.Debian.Repository
-    Distribution.Debian.Repository.Backend
     Distribution.Debian.Repository.PackagesIndex
-    Distribution.Debian.Repository.Parse
     Distribution.Debian.Repository.ReleaseFile
+  other-modules:
+    Distribution.Debian.Repository.Backend
+    Distribution.Debian.Repository.Conduit
+    Distribution.Debian.Repository.Parse
   build-depends:
       attoparsec
     , base
     , bytestring
     , conduit
     , containers
+    , enclosed-exceptions
+    , exceptions
     , lens
     , http-conduit
     , http-types
@@ -45,5 +49,16 @@ test-suite test-debian-repository
     , tasty-quickcheck
     , text
     , QuickCheck
+  ghc-options: -threaded
+  default-language: Haskell2010
+
+executable debian-repository-playground
+  hs-source-dirs: playground
+  main-is: Main.hs
+  other-modules:
+    Distribution.Debian.Repository.Playground.Main
+  build-depends:
+      base
+    , debian-repository
   ghc-options: -threaded
   default-language: Haskell2010

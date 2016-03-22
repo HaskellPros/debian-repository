@@ -9,7 +9,7 @@ module Distribution.Debian.Repository.Parse
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.Text
-import Data.Map.Strict
+import Data.Map.Strict (Map)
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
@@ -33,7 +33,7 @@ data ParseUtf8State r = ParseUtf8State
   , parseUtf8InnerResult :: IncrementalParser T.Text r
   }
 
-parseUtf8 :: Show r => IncrementalParser T.Text r -> IncrementalParser B.ByteString r
+parseUtf8 :: IncrementalParser T.Text r -> IncrementalParser B.ByteString r
 parseUtf8 textParser = go Nothing (ParseUtf8State T.streamDecodeUtf8 textParser)
   where
     go r (ParseUtf8State utf8Decoding inner) input = case utf8Decoding input of
