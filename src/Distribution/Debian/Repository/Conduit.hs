@@ -2,6 +2,7 @@
 module Distribution.Debian.Repository.Conduit
   ( IncrementalParseException (..)
   , incrementalParserSink
+  , packagesIndexSink
   , releaseFileSink
   ) where
 

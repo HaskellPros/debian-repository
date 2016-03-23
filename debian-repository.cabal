@@ -21,10 +21,14 @@ library
     , base
     , bytestring
     , conduit
+    , conduit-extra
     , containers
     , enclosed-exceptions
     , exceptions
     , lens
+    , monad-control
+    , monad-logger
+    , primitive
     , http-conduit
     , http-types
     , resourcet
@@ -60,5 +64,7 @@ executable debian-repository-playground
   build-depends:
       base
     , debian-repository
+    , monad-logger
+    , transformers
   ghc-options: -threaded
   default-language: Haskell2010

@@ -1,13 +1,16 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell, TypeFamilies #-}
 module Distribution.Debian.Repository.ReleaseFile
   ( ReleaseFile (..)
   , parseReleaseFile
   ) where
 
+import Control.Lens
+import Control.Lens.TH
 import Data.Attoparsec.Text
 import Data.Map.Strict (Map)
 import Data.Monoid
 import Distribution.Debian.Repository.Parse
+import Prelude hiding (takeWhile)
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -19,6 +22,17 @@ data ReleaseFile = ReleaseFile
 newtype ParseReleaseState = ParseReleaseState
   { parseReleaseAtto :: T.Text -> Result (Map T.Text T.Text)
   }
+
+makeLenses ''ReleaseFile
+
+type instance Index ReleaseFile = T.Text
+type instance IxValue ReleaseFile = T.Text
+
+instance Ixed ReleaseFile where
+  ix field = releaseFileFields . ix field
+
+instance At ReleaseFile where
+  at field = releaseFileFields . at field
 
 parseReleaseFile :: IncrementalParser B.ByteString ReleaseFile
 parseReleaseFile = parseUtf8 parseText

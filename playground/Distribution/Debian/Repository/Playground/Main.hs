@@ -3,9 +3,16 @@ module Distribution.Debian.Repository.Playground.Main
   ( main
   ) where
 
+import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Distribution.Debian.Repository
 
 main :: IO ()
-main = do
-  repo <- loadRepository "http://ftp.debian.org/debian" "wheezy" ["main", "contrib", "non-free"]
-  print repo
+main = runStdoutLoggingT $ do
+  repo <- loadRepository LoadRepositoryArgs
+    { loadRepositoryUri = "http://ftp.acc.umu.se/debian"
+    , loadRepositoryDist = "wheezy"
+    , loadRepositoryComponents = ["main", "contrib", "non-free"]
+    , loadRepositoryArchitecture = "amd64"
+    }
+  liftIO $ print repo
