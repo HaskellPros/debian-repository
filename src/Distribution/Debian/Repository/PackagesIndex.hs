@@ -15,6 +15,7 @@ import Data.Attoparsec.Text
 import Data.Map.Strict (Map)
 import Data.Monoid
 import Debug.Trace
+import Distribution.Debian.Repository.Package
 import Distribution.Debian.Repository.Parse
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString as B
@@ -22,49 +23,14 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
--- | Basic data type for a repository Package Index entry. Implements 'Control.Lens.At.Ixed'
--- and 'Control.Lens.At.At' in such a way that all attributes can be accessed using their
--- names. "Filename" and "Size" should always be present, other ones are optional.
-data Package = Package
-  { _packageFilename    :: T.Text
-  , _packageSize        :: T.Text
-  , _packageOtherFields :: Map T.Text T.Text
-  } deriving (Eq, Show)
-
 data PackagesIndex = PackagesIndex
   { _indexPackages :: Map T.Text Package
   } deriving (Eq, Show)
 
-makeLenses ''Package
 makeLenses ''PackagesIndex
-
-type instance Index Package = T.Text
-type instance IxValue Package = T.Text
-
-instance Ixed Package where
-  ix field
-    | field == "Filename" = packageFilename
-    | field == "Size" = packageSize
-    | otherwise = packageOtherFields . ix field
 
 type instance Index PackagesIndex = T.Text
 type instance IxValue PackagesIndex = Package
-
-instance At Package where
-  at field
-    | field == "Filename" = lens
-        (Just . _packageFilename)
-        (\p mv -> case mv of
-          Just v -> p {_packageFilename = v}
-          Nothing -> error "Filename field is mandatory for Packages"
-        )
-    | field == "Size" = lens
-        (Just . _packageSize)
-        (\p mv -> case mv of
-          Just v -> p {_packageSize = v}
-          Nothing -> error "Size field is mandatory for Packages"
-        )
-    | otherwise = packageOtherFields . at field
 
 instance Ixed PackagesIndex where
   ix field = indexPackages . ix field

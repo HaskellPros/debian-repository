@@ -34,7 +34,7 @@ data Repository = Repository
   { repositoryRoot           :: T.Text
   , repositoryReleaseFile    :: ReleaseFile
   , repositoryPackageIndices :: [PackagesIndex]
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 data RepositoryLoadException
   = RepositoryLoadBackendFailure SomeException

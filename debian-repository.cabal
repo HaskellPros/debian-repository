@@ -10,6 +10,7 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Distribution.Debian.Repository
+    Distribution.Debian.Repository.Package
     Distribution.Debian.Repository.PackagesIndex
     Distribution.Debian.Repository.ReleaseFile
   other-modules:
