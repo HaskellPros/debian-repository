@@ -4,6 +4,7 @@ module Distribution.Debian.Repository.Package
   , packageTasks
   , PackageVersion (..)
   , packageVersion
+  , packageVersionParse
   , packageVersionRaw
   ) where
 

@@ -3,6 +3,7 @@ module Distribution.Debian.Repository
   ( Repository (..)
   , LoadRepositoryArgs (..)
   , loadRepository
+  , repositoryReleaseUri
   ) where
 
 import Control.Exception
@@ -54,12 +55,21 @@ data LoadRepositoryArgs = LoadRepositoryArgs
   -- ^ Components to load
   }
 
+-- | Takes repository base URI with dist name and constructs root distribution URI for that repository
+repositoryDistUri :: T.Text -> T.Text -> T.Text
+repositoryDistUri uri dist = uri <> "/dists/" <> dist
+
+-- | Takes repository base URI with dist name and constructs repository Release file
+-- URI.
+repositoryReleaseUri :: T.Text -> T.Text -> T.Text
+repositoryReleaseUri uri dist = repositoryDistUri uri dist <> "/Release"
+
 loadRepository
   :: (MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadCatch m, MonadThrow m)
   => LoadRepositoryArgs -> m Repository
 loadRepository (LoadRepositoryArgs arch uri dist components) = withUriSchemaBackend uri $ \backend -> do
-  let distUri = uri <> "/dists/" <> dist
-      releaseUri = distUri <> "/Release"
+  let distUri = repositoryDistUri uri dist
+      releaseUri = repositoryReleaseUri uri dist
   $logInfoS logSource $ "Loading Release file from " <> releaseUri
   eitherReleaseFile <- repositoryUriRead backend releaseUri $ \rsrc -> rsrc $$+- releaseFileSink
   releaseFile <- case eitherReleaseFile of
