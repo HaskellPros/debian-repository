@@ -10,12 +10,12 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Distribution.Debian.Repository
+    Distribution.Debian.Repository.Backend
+    Distribution.Debian.Repository.Conduit
     Distribution.Debian.Repository.Package
     Distribution.Debian.Repository.PackagesIndex
     Distribution.Debian.Repository.ReleaseFile
   other-modules:
-    Distribution.Debian.Repository.Backend
-    Distribution.Debian.Repository.Conduit
     Distribution.Debian.Repository.Parse
   build-depends:
       attoparsec

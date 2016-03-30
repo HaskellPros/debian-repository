@@ -71,6 +71,5 @@ stripFilePrefix t = if "file://" `T.isPrefixOf` t
   then T.drop (T.length "file://") t
   else t
 
-
 withUriSchemaBackend :: (MonadIO m, MonadBaseControl IO m, MonadCatch m, MonadThrow m) => T.Text -> (RepositoryUriSchemaBackend (ResourceT m) -> (ResourceT m) a) -> m a
 withUriSchemaBackend uri = withSchemaBackend (detectUriSchema uri)

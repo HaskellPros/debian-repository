@@ -4,6 +4,7 @@ module Distribution.Debian.Repository
   , LoadRepositoryArgs (..)
   , loadRepository
   , repositoryReleaseUri
+  , repositoryComponentRoot
   ) where
 
 import Control.Exception
@@ -63,6 +64,11 @@ repositoryDistUri uri dist = uri <> "/dists/" <> dist
 -- URI.
 repositoryReleaseUri :: T.Text -> T.Text -> T.Text
 repositoryReleaseUri uri dist = repositoryDistUri uri dist <> "/Release"
+
+-- | Takes repository base URI, dist name, and component name. Constructs component
+-- root URI.
+repositoryComponentRoot :: T.Text -> T.Text -> T.Text -> T.Text
+repositoryComponentRoot uri dist component = repositoryDistUri uri dist <> "/" <> component
 
 loadRepository
   :: (MonadBaseControl IO m, MonadIO m, MonadLogger m, MonadCatch m, MonadThrow m)
@@ -134,9 +140,9 @@ data PackagesFileInfo = PackagesFileInfo
   , packagesFileAltFilenames :: [T.Text]
   } deriving (Show)
 
-toPackagesFileInfos :: [Md5SumEntry] -> [PackagesFileInfo]
+toPackagesFileInfos :: [HashedEntry MD5] -> [PackagesFileInfo]
 toPackagesFileInfos md5sums =
-    let dirsWithFiles = map (splitDir . md5SumEntryFilename) md5sums
+    let dirsWithFiles = map (splitDir . hashedEntryFilename) md5sums
         dirGroups = groupBy (\x y -> fst x == fst y) dirsWithFiles
     in  map groupToPackagesFileInfo dirGroups
   where
@@ -150,39 +156,13 @@ toPackagesFileInfos md5sums =
       }
 
 -- | Searches for package files for given component and architecture in given Release file
-findComponentPackages :: ReleaseFile -> T.Text -> T.Text -> [Md5SumEntry]
+findComponentPackages :: ReleaseFile -> T.Text -> T.Text -> [HashedEntry MD5]
 findComponentPackages releaseFile component arch =
-    case releaseFile ^. at "MD5Sum" of
+    case releaseFile ^. releaseFileMd5Sum of
       Nothing -> []
-      Just md5sum -> filter isSuitableEntry $ parseMd5Sum md5sum
+      Just entries -> filter isSuitableEntry entries
   where
-    isSuitableEntry x = case T.splitOn "/" (md5SumEntryFilename x) of
+    isSuitableEntry x = case T.splitOn "/" (hashedEntryFilename x) of
       [] -> False
       parts -> length parts > 2 && isSuitableBinary (last $ init parts) && "Packages" `T.isPrefixOf` last parts
     isSuitableBinary x = x == "binary-" <> arch
-
-data Md5SumEntry = Md5SumEntry
-  { md5SumEntryMd5      :: T.Text
-  , md5SumEntrySize     :: Int
-  , md5SumEntryFilename :: T.Text
-  } deriving (Eq, Show)
-
-parseMd5Sum :: T.Text -> [Md5SumEntry]
-parseMd5Sum input = case parseOnly (md5Parser []) input of
-    Left _ -> [] -- Probably it's a good place to put some error handling, but that's yet to be done.
-    Right x -> reverse x
-  where
-    md5Parser current = do
-      entry <- option Nothing (Just <$> parseLine)
-      case entry of
-        Nothing -> return current
-        Just x -> md5Parser (x:current)
-    parseLine = do
-      skipSpace
-      hash <- takeWhile (not .  isHorizontalSpace)
-      skipSpace
-      size <- decimal
-      skipSpace
-      filename <- takeWhile (\x -> not (isHorizontalSpace x) && not (isEndOfLine x))
-      endOfLine
-      return $ Md5SumEntry hash size filename
