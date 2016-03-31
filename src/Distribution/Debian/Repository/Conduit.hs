@@ -5,6 +5,7 @@ module Distribution.Debian.Repository.Conduit
   , packagesIndexSink
   , packagesIndexSource
   , releaseFileSink
+  , releaseFileSource
   ) where
 
 import Control.Exception
@@ -41,3 +42,6 @@ releaseFileSink = incrementalParserSink parseReleaseFile B.empty
 
 packagesIndexSource :: Monad m => PackagesIndex -> Source m B.ByteString
 packagesIndexSource packagesIndex = storePackages packagesIndex yield
+
+releaseFileSource :: Monad m => ReleaseFile -> Source m B.ByteString
+releaseFileSource releaseFile = storeReleaseFile releaseFile yield

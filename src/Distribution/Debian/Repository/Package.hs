@@ -2,19 +2,22 @@
 module Distribution.Debian.Repository.Package
   ( Package (..)
   , packageTasks
-  , PackageVersion (..)
+  , DebianVersion (..)
   , packageVersion
-  , packageVersionParse
   , packageVersionRaw
+  , parseDebianVersion'
   ) where
 
 import Control.Lens
 import Control.Lens.TH
 import Data.Attoparsec.Text
 import Data.Map.Strict (Map)
+import Data.Maybe (fromMaybe)
 import Data.Monoid
+import Debian.Version
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
+import qualified Text.PrettyPrint as Pretty
 
 -- | Basic data type for a repository Package Index entry. Implements 'Control.Lens.At.Ixed'
 -- and 'Control.Lens.At.At' in such a way that all attributes can be accessed using their
@@ -57,44 +60,10 @@ packageTasks package = case package ^. at "Task" of
   Nothing -> []
   Just tasks -> map (T.dropWhile (== ' ')) (T.splitOn "," tasks)
 
-data PackageVersion = PackageVersion
-  { packageVersionEpoch    :: Maybe Int
-  , packageVersionUpstream :: T.Text
-  , packageVersionDebian   :: Maybe T.Text
-  } deriving (Eq, Show)
-
-packageVersion :: Lens' Package (Maybe PackageVersion)
+packageVersion :: Lens' Package (Maybe DebianVersion)
 packageVersion = lens get put
-  where get package = package ^. at "Version" >>= packageVersionParse
-        put package version = package & at "Version" .~ (packageVersionText <$> version)
+  where get package = (parseDebianVersion' . T.unpack) <$> package ^. at "Version"
+        put package version = package & at "Version" .~ ((T.pack . Pretty.render . prettyDebianVersion) <$> version)
 
 packageVersionRaw :: Lens' Package (Maybe T.Text)
 packageVersionRaw = at "Version"
-
-packageVersionText :: PackageVersion -> T.Text
-packageVersionText ver =
-     (case packageVersionEpoch ver of
-        Just e -> T.pack (show e) <> ":"
-        Nothing -> "")
-  <> packageVersionUpstream ver
-  <> (case packageVersionDebian ver of
-        Just vd -> "-" <> vd
-        Nothing -> "")
-
-packageVersionParse :: T.Text -> Maybe PackageVersion
-packageVersionParse t = case parseOnly versionParser t of
-    Left _ -> Nothing
-    Right x -> Just x
-  where
-    versionParser = do
-      epoch <- option Nothing (Just <$> parseEpoch)
-      upstream <- takeWhile1 (/= '-')
-      debian <- option Nothing (Just <$> parseDebian)
-      return $ PackageVersion epoch upstream debian
-    parseEpoch = do
-      e <- decimal
-      char ':'
-      return e
-    parseDebian = do
-      char '-'
-      takeText

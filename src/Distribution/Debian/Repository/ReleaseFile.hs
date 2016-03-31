@@ -2,6 +2,7 @@
 module Distribution.Debian.Repository.ReleaseFile
   ( ReleaseFile (..)
   , parseReleaseFile
+  , storeReleaseFile
   , MD5
   , HashedEntry (..)
   , releaseFileMd5Sum
@@ -52,6 +53,9 @@ parseReleaseFile = parseUtf8 parseText
         IncrementalParseFail $ "Parsing failed with error " <> T.pack (show err) <> " contexts: " <> T.pack (show ctx) <> " remainder: " <> T.pack (show remainder)
     releaseParser = keyValueMapParser endOfInput
 
+storeReleaseFile :: Monad m => ReleaseFile -> (B.ByteString -> m ()) -> m ()
+storeReleaseFile rf = storeKeyValueMap (_releaseFileFields rf)
+
 data MD5
 
 data HashedEntry hash = HashedEntry
@@ -81,7 +85,7 @@ parseMd5Sum input = case parseOnly (md5Parser []) input of
       return $ HashedEntry hash size filename
 
 storeMd5Sum :: [HashedEntry MD5] -> T.Text
-storeMd5Sum hashes = T.intercalate "\n" $ map entryToLine hashes
+storeMd5Sum hashes = T.intercalate "\n" (map entryToLine hashes)
   where
     entryToLine (HashedEntry hash size filename) =
       hash <> " " <> T.pack (show size) <> " " <> filename

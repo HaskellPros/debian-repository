@@ -24,11 +24,13 @@ library
     , conduit
     , conduit-extra
     , containers
+    , debian
     , enclosed-exceptions
     , exceptions
     , lens
     , monad-control
     , monad-logger
+    , pretty
     , primitive
     , http-conduit
     , http-types

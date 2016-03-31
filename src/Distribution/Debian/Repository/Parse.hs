@@ -4,12 +4,14 @@ module Distribution.Debian.Repository.Parse
   , IncrementalParser (..)
   , parseUtf8
   , keyValueMapParser
+  , storeKeyValueMap
   ) where
 
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.Text
 import Data.Map.Strict (Map)
+import Data.Monoid
 import Prelude hiding (takeWhile)
 import qualified Data.ByteString as B
 import qualified Data.Map.Strict as Map
@@ -98,3 +100,22 @@ keyValueMapParser parseEndOfMap = parseValues Map.empty
           line <- takeWhile (not . isEndOfLine)
           endOfLine <|> endOfInput
           return line
+
+storeKeyValueMap :: Monad m => Map T.Text T.Text -> (B.ByteString -> m ()) -> m ()
+storeKeyValueMap v act =
+    forM_ (Map.toList v) $ \(fieldName, fieldValue) -> do
+      act $ T.encodeUtf8 (fieldName <> ": ")
+      storeValue fieldValue
+  where
+    yieldLine x = act $ T.encodeUtf8 (x <> "\r\n")
+    storeValue x = do
+      let valueLines = T.splitOn "\n" x
+          (firstLine, nextLines) = case valueLines of
+            []   -> (T.empty, [])
+            [x]  -> (x, [])
+            x:xs -> (T.empty, x:xs)
+      yieldLine firstLine
+      forM_ nextLines $ \line ->
+        if T.null line
+          then yieldLine " ."
+          else yieldLine $ " " <> line
