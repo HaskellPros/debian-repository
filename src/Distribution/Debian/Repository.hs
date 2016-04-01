@@ -158,7 +158,7 @@ toPackagesFileInfos md5sums =
 -- | Searches for package files for given component and architecture in given Release file
 findComponentPackages :: ReleaseFile -> T.Text -> T.Text -> [HashedEntry MD5]
 findComponentPackages releaseFile component arch =
-    case releaseFile ^. releaseFileMd5Sum of
+    case releaseFile ^. releaseFileMd5 of
       Nothing -> []
       Just entries -> filter isSuitableEntry entries
   where

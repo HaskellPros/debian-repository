@@ -84,7 +84,7 @@ storePackages idx act = forM_ (Map.toList $ _indexPackages idx) $ \(packageName,
     yieldLine $ "Package: " <> packageName
     yieldLine $ "Filename: " <> _packageFilename package
     yieldLine $ "Size: " <> _packageSize package
-    storeKeyValueMap (_packageOtherFields package) act
+    storeKeyValueMap (StoreKeyValueMapSettings "\n") (_packageOtherFields package) act
     yieldLine ""
   where
-    yieldLine x = act $ T.encodeUtf8 (x <> "\r\n")
+    yieldLine x = act $ T.encodeUtf8 (x <> "\n")

@@ -5,7 +5,8 @@ module Distribution.Debian.Repository.ReleaseFile
   , storeReleaseFile
   , MD5
   , HashedEntry (..)
-  , releaseFileMd5Sum
+  , releaseFileMd5
+  , releaseFileSha256
   ) where
 
 import Control.Lens
@@ -54,9 +55,10 @@ parseReleaseFile = parseUtf8 parseText
     releaseParser = keyValueMapParser endOfInput
 
 storeReleaseFile :: Monad m => ReleaseFile -> (B.ByteString -> m ()) -> m ()
-storeReleaseFile rf = storeKeyValueMap (_releaseFileFields rf)
+storeReleaseFile rf = storeKeyValueMap (StoreKeyValueMapSettings "\n") (_releaseFileFields rf)
 
 data MD5
+data SHA256
 
 data HashedEntry hash = HashedEntry
   { hashedEntryHash     :: T.Text
@@ -64,8 +66,8 @@ data HashedEntry hash = HashedEntry
   , hashedEntryFilename :: T.Text
   } deriving (Eq, Show)
 
-parseMd5Sum :: T.Text -> [HashedEntry MD5]
-parseMd5Sum input = case parseOnly (md5Parser []) input of
+parseHash :: T.Text -> [HashedEntry a]
+parseHash input = case parseOnly (md5Parser []) input of
     Left _ -> [] -- Probably it's a good place to put some error handling, but that's yet to be done.
     Right x -> reverse x
   where
@@ -84,13 +86,18 @@ parseMd5Sum input = case parseOnly (md5Parser []) input of
       endOfLine
       return $ HashedEntry hash size filename
 
-storeMd5Sum :: [HashedEntry MD5] -> T.Text
-storeMd5Sum hashes = T.intercalate "\n" (map entryToLine hashes)
+storeHash :: [HashedEntry a] -> T.Text
+storeHash hashes = T.intercalate "\n" (map entryToLine hashes)
   where
     entryToLine (HashedEntry hash size filename) =
       hash <> " " <> T.pack (show size) <> " " <> filename
 
-releaseFileMd5Sum :: Lens' ReleaseFile (Maybe [HashedEntry MD5])
-releaseFileMd5Sum = lens get put
-  where get rf = parseMd5Sum <$> rf ^. at "MD5Sum"
-        put rf v = rf & at "MD5Sum" .~ (storeMd5Sum <$> v)
+releaseFileMd5 :: Lens' ReleaseFile (Maybe [HashedEntry MD5])
+releaseFileMd5 = lens get put
+  where get rf = parseHash <$> rf ^. at "MD5Sum"
+        put rf v = rf & at "MD5Sum" .~ (storeHash <$> v)
+
+releaseFileSha256 :: Lens' ReleaseFile (Maybe [HashedEntry SHA256])
+releaseFileSha256 = lens get put
+  where get rf = parseHash <$> rf ^. at "SHA256"
+        put rf v = rf & at "SHA256" .~ (storeHash <$> v)

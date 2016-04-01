@@ -4,6 +4,7 @@ module Distribution.Debian.Repository.Parse
   , IncrementalParser (..)
   , parseUtf8
   , keyValueMapParser
+  , StoreKeyValueMapSettings (..)
   , storeKeyValueMap
   ) where
 
@@ -101,18 +102,22 @@ keyValueMapParser parseEndOfMap = parseValues Map.empty
           endOfLine <|> endOfInput
           return line
 
-storeKeyValueMap :: Monad m => Map T.Text T.Text -> (B.ByteString -> m ()) -> m ()
-storeKeyValueMap v act =
+data StoreKeyValueMapSettings = StoreKeyValueMapSettings
+  { storeKeyValueMapEndOfLine :: T.Text
+  }
+
+storeKeyValueMap :: Monad m => StoreKeyValueMapSettings -> Map T.Text T.Text -> (B.ByteString -> m ()) -> m ()
+storeKeyValueMap (StoreKeyValueMapSettings eol) v act =
     forM_ (Map.toList v) $ \(fieldName, fieldValue) -> do
-      act $ T.encodeUtf8 (fieldName <> ": ")
+      act $ T.encodeUtf8 (fieldName <> ":")
       storeValue fieldValue
   where
-    yieldLine x = act $ T.encodeUtf8 (x <> "\r\n")
+    yieldLine x = act $ T.encodeUtf8 (x <> eol)
     storeValue x = do
       let valueLines = T.splitOn "\n" x
           (firstLine, nextLines) = case valueLines of
             []   -> (T.empty, [])
-            [x]  -> (x, [])
+            [x]  -> (" " <> x, [])
             x:xs -> (T.empty, x:xs)
       yieldLine firstLine
       forM_ nextLines $ \line ->
