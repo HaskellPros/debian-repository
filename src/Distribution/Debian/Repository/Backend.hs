@@ -3,6 +3,7 @@ module Distribution.Debian.Repository.Backend
   ( RepositoryUriSchema (..)
   , RepositoryUriSchemaBackend (..)
   , RepositoryReadError (..)
+  , detectUriSchema
   , withUriSchemaBackend
   ) where
 

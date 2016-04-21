@@ -113,13 +113,13 @@ loadPackagesFile backend rootUri pfi = do
               loadPackagesResult <- repositoryUriRead backend filename $ \rsrc -> rsrc $$+- snk
               case loadPackagesResult of
                 Left RepositoryReadNotFound -> do
-                  $logWarnS logSource $ "Failed to load package from \"" <> filename <> "\" - file not found. Going on with other alt names."
+                  $logWarnS logSource $ "Failed to load package index from \"" <> filename <> "\" - file not found. Going on with other alt names."
                   return Nothing
                 Left (RepositoryReadOther e) -> do
-                  $logWarnS logSource $ "Failed to load package from \"" <> filename <> "\" with exception \"" <> T.pack (show e) <> "\". Going on with other alt names."
+                  $logWarnS logSource $ "Failed to load package index from \"" <> filename <> "\" with exception \"" <> T.pack (show e) <> "\". Going on with other alt names."
                   return Nothing
                 Right Nothing -> do
-                  $logWarnS logSource $ "Failed to load package from \"" <> filename <> "\" with parser failing to yield value. Going on with other alt names."
+                  $logWarnS logSource $ "Failed to load package index from \"" <> filename <> "\" with parser failing to yield value. Going on with other alt names."
                   return Nothing
                 Right (Just x) -> return (Just x)
       in case alreadyLoaded of
