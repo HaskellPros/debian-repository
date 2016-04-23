@@ -62,23 +62,6 @@ parsePackages = parseUtf8 parseText
       Fail remainder ctx err ->
         IncrementalParseFail $ "Parsing failed with error " <> T.pack (show err) <> " contexts: " <> T.pack (show ctx) <> " remainder: " <> T.pack (show remainder)
 
-    parsePackage :: Parser (T.Text, Package)
-    parsePackage = do
-      values <- keyValueMapParser parseSeparator
-      name <- case values ^. at "Package" of
-        Just v -> return v
-        Nothing -> fail "Required field \"Package\" isn't present"
-      filename <- case values ^. at "Filename" of
-        Just v -> return v
-        Nothing -> fail "Required field \"Filename\" isn't present"
-      size <- case values ^. at "Size" of
-        Just v -> return v
-        Nothing -> fail "Required filed \"Size\" isn't present"
-      return (name, Package filename size (values & sans "Package" . sans "Filename" . sans "Size"))
-
-    parseSeparator :: Parser ()
-    parseSeparator = endOfInput <|> endOfLine <|> (skipSpace *> endOfLine)
-
 storePackages :: Monad m => PackagesIndex -> (B.ByteString -> m ()) -> m ()
 storePackages idx act = forM_ (Map.toList $ _indexPackages idx) $ \(packageName, package) -> do
     yieldLine $ "Package: " <> packageName

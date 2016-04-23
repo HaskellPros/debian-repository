@@ -6,8 +6,11 @@ module Distribution.Debian.Repository.Package
   , packageVersion
   , packageVersionRaw
   , parseDebianVersion'
+  , parsePackage
+  , parsePackage'
   ) where
 
+import Control.Applicative
 import Control.Lens
 import Control.Lens.TH
 import Data.Attoparsec.Text
@@ -15,6 +18,7 @@ import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Debian.Version
+import Distribution.Debian.Repository.Parse
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import qualified Text.PrettyPrint as Pretty
@@ -67,3 +71,23 @@ packageVersion = lens get put
 
 packageVersionRaw :: Lens' Package (Maybe T.Text)
 packageVersionRaw = at "Version"
+
+parsePackage :: Parser (T.Text, Package)
+parsePackage = do
+  values <- keyValueMapParser parseSeparator
+  name <- case values ^. at "Package" of
+    Just v -> return v
+    Nothing -> fail "Required field \"Package\" isn't present"
+  filename <- case values ^. at "Filename" of
+    Just v -> return v
+    Nothing -> fail "Required field \"Filename\" isn't present"
+  size <- case values ^. at "Size" of
+    Just v -> return v
+    Nothing -> fail "Required filed \"Size\" isn't present"
+  return (name, Package filename size (values & sans "Package" . sans "Filename" . sans "Size"))
+
+parseSeparator :: Parser ()
+parseSeparator = endOfInput <|> endOfLine <|> (skipSpace *> endOfLine)
+
+parsePackage' :: T.Text -> Either String (T.Text, Package)
+parsePackage' = parseOnly parsePackage
